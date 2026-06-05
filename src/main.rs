@@ -1,6 +1,9 @@
 use clap::{Parser,Subcommand};
 use serde::Deserialize;
-use std::{collections::HashMap, mem::forget};
+use std::{collections::HashMap, fs::OpenOptions};
+use indicatif::ProgressBar;
+use std::io::Write;
+
 
 
 
@@ -24,7 +27,7 @@ enum Commands {
 #[derive(Deserialize)]
 
 struct ExchangeResponse {
-    base_code: String,
+    
     rates: HashMap<String,f64>
 }
 
@@ -32,7 +35,12 @@ struct ExchangeResponse {
 async fn main() -> anyhow::Result<()> {
     let cli = CLI::parse();
     match cli.subcommand {
+        
         Commands::Convert { amount, from, to } => {
+            let spinner = ProgressBar::new_spinner();
+            spinner.set_message("Fetching live exchange rates...");
+            spinner.enable_steady_tick(std::time::Duration::from_millis(100));
+
             let u_to = to.to_uppercase();
             let u_from = from.to_uppercase();
             let url = format!("https://open.er-api.com/v6/latest/{}",u_from);
@@ -40,7 +48,7 @@ async fn main() -> anyhow::Result<()> {
             let response = client.get(&url)
             .send()
             .await?;
-
+            spinner.finish_and_clear();
         let data = response.json::<ExchangeResponse>().await?;
         let new_rates = data.rates.get(&u_to);
 
@@ -48,9 +56,21 @@ async fn main() -> anyhow::Result<()> {
             let converted_amount = amount * rate;
             println!("🎉 Conversion Successful!");
             println!("{:.2} {} = {:.2} {}", amount, u_from, converted_amount, u_to);
+
+            let log_line = format!("{:.2} {} = {:.2} {}\n", amount, u_from, converted_amount, u_to);
+
+            let mut file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open("conversion_history.txt")?;
+
+            file.write_all(log_line.as_bytes())?;
+            println!("💾 Conversion recorded to conversion_history.txt");
+
         } else {
             println!("❌ Error: Could not find currency code '{}'", u_to);
         }
+
 
 
 
