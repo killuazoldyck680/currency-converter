@@ -86,10 +86,6 @@ This project is open-source and available under the MIT License.
 
 ---
 
-### 🏁 Add and Push to GitHub!
-Go ahead and create this file, save it, and push it up so your repository landing page looks incredibly clean and professional:
 
-```bash
-git add README.md
-git commit -m "docs: generate comprehensive project README with installation and usage guides"
-git push
+
+
